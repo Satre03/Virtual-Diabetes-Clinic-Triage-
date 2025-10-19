@@ -1,58 +1,80 @@
-import os
+import argparse
 import json
 import joblib
-import numpy as np  # noqa: F401  # kept for later numeric operations
-from pathlib import Path
+import os
+import pandas as pd
+import numpy as np
 from sklearn.datasets import load_diabetes
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
+from sklearn.ensemble import RandomForestRegressor
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error
+from sklearn.model_selection import train_test_split
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
 
-# --- Setup ---
-ART_DIR = Path("artifacts")
-ART_DIR.mkdir(exist_ok=True, parents=True)
+RANDOM_SEED = 42
 
-MODELS_DIR = Path("models")  # new folder for Docker
-MODELS_DIR.mkdir(exist_ok=True, parents=True)
+def get_model(version: str):
+    if version == "0.1":
+        print("Using model: LinearRegression (v0.1)")
+        model = Pipeline([
+            ("scaler", StandardScaler()),
+            ("model", LinearRegression())
+        ])
+    elif version == "0.2":
+        model = Pipeline([
+            ("scaler", StandardScaler()),
+            ("model", RandomForestRegressor(
+                n_estimators=400,
+                max_depth=10,
+                max_features='sqrt',
+                random_state=RANDOM_SEED
+            ))
+        ])
+    else:
+        raise ValueError(f"Unknown model version: {version}")
+    return model
 
-RANDOM_STATE = 42
-MODEL_VERSION = os.getenv("MODEL_VERSION", "dev")
+def main(version: str):
+    print(f"--- Training model version {version} ---")
 
-# --- Load dataset ---
-data = load_diabetes(as_frame=True)
-X = data.data
-y = data.target
+    Xy = load_diabetes(as_frame=True)
+    X = Xy.frame.drop(columns=["target"])
+    y = Xy.frame["target"]
+    features = list(X.columns)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=RANDOM_SEED)
 
-# --- Split data ---
-X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.2, random_state=RANDOM_STATE
-)
+    pipeline = get_model(version)
+    pipeline.fit(X_train, y_train)
 
-# --- Preprocess + train baseline model ---
-scaler = StandardScaler()
-X_train_scaled = scaler.fit_transform(X_train)
-X_test_scaled = scaler.transform(X_test)
+    y_pred = pipeline.predict(X_test)
+    mse = mean_squared_error(y_test, y_pred)
+    rmse = np.sqrt(mse)
+    print(f"Test RMSE for v{version}: {rmse:.4f}")
 
-model = LinearRegression()
-model.fit(X_train_scaled, y_train)
+    os.makedirs("models", exist_ok=True)
 
-# --- Evaluate ---
-preds = model.predict(X_test_scaled)
-rmse = mean_squared_error(y_test, preds, squared=False)
+    model_path = f"models/model_v{version}.joblib"
+    joblib.dump(pipeline, model_path)
+    print(f"Model saved to {model_path}")
 
-metrics = {"rmse": rmse}
-meta = {"model": "LinearRegression", "random_state": RANDOM_STATE}
+    feature_path = "models/feature_list.json"
+    with open(feature_path, "w") as f:
+        json.dump(features, f)
+    print(f"Features saved to {feature_path}")
 
-# --- Save artifacts (for CI reproducibility) ---
-joblib.dump(model, ART_DIR / "model.joblib")
-(ART_DIR / "metrics.json").write_text(json.dumps(metrics, indent=2))
-(ART_DIR / "meta.json").write_text(json.dumps(meta, indent=2))
+    metrics = {"version": version, "rmse": rmse}
+    with open("metrics.json", "w") as f:
+        json.dump(metrics, f, indent=4)
+    print("Metrics saved to metrics.json")
 
-# --- Save model and features for Docker image ---
-joblib.dump(model, MODELS_DIR / f"model_v{MODEL_VERSION}.joblib")
-(MODELS_DIR / "feature_list.json").write_text(json.dumps(list(X.columns), indent=2))
-
-print(f"Training complete. RMSE={rmse:.4f}")
-print("Artifacts saved in", ART_DIR)
-print("Model + features saved in", MODELS_DIR)
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--version",
+        type=str,
+        required=True,
+        help="Model version to train (e.g., 0.1 or 0.2)"
+    )
+    args = parser.parse_args()
+    main(args.version)
