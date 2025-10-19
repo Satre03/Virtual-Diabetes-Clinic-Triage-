@@ -28,7 +28,7 @@ jobs:
 
       # Strikt fel-lint (stoppar på allvarliga fel)
       - name: Lint with flake8 (style)
-        run: flake8 src tests --max-line-length=100 --exit-zero
+        run: flake8 src tests --max-line-length=120 --exit-zero
 
 
       # Stil-lint (rekommenderas för jämn kodstil)
