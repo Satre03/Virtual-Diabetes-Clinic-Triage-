@@ -1,6 +1,7 @@
 # api/schema.py
 from pydantic import BaseModel
 
+
 class DiabetesInput(BaseModel):
     age: float
     sex: float
