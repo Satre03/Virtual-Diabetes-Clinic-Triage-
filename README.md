@@ -10,11 +10,13 @@ The Project i build to reproduce **MLOps-pipeline** with **GitHub Actions** and 
 ## Command to run the project
 
 ### Pull the project
-```docker pull ghcr.io/Satre03/VirtualDiabetesClinicTriage:v0.1
+```
+docker pull ghcr.io/Satre03/VirtualDiabetesClinicTriage:v0.1
 ```
 
 ### Run the project
-```docker run -d -p 8000:8000 --name clinic-service ghcr.io/Satre03/VirtualDiabetesClinicTriage:v0.1
+```
+docker run -d -p 8000:8000 --name clinic-service ghcr.io/Satre03/VirtualDiabetesClinicTriage:v0.1
 ```
 
 WINDOWS:
