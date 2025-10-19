@@ -21,14 +21,14 @@ def get_model(version: str):
             ("model", LinearRegression())
         ])
     elif version == "0.2":
-        model = Pipeline([
+        pipeline = Pipeline([
             ("scaler", StandardScaler()),
             ("model", RandomForestRegressor(
                 n_estimators=400,
                 max_depth=10,
-                max_features='sqrt',
-                random_state=RANDOM_SEED
-            ))
+                max_features="sqrt",
+                random_state=RANDOM_SEED,
+            )),
         ])
     else:
         raise ValueError(f"Unknown model version: {version}")
