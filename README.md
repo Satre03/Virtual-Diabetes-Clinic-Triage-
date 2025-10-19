@@ -37,11 +37,11 @@ python src/train.py
 ```
 Build Docker-image
 ```bash
-docker build -t ghcr.io/satre03/virtual-diabetes-clinic-triage:v.01 .
+docker build -t ghcr.io/satre03/virtual-diabetes-clinic-triage:v0.1 .
 ```
 Run containern
 ```bash
-docker run -p 8000:8000 ghcr.io/satre03/virtual-diabetes-clinic-triage:v.01
+docker run -p 8000:8000 ghcr.io/satre03/virtual-diabetes-clinic-triage:v0.1
 ```
 Open in browser:
 ```bash
