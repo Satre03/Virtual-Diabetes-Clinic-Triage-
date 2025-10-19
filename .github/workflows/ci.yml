@@ -3,11 +3,11 @@ name: CI & Publish
 on:
   push:
     branches: [main, master]
-    tags: ['v*']     # push tag v0.1 -> image :v0.1 and baked MODEL_VERSION=v0.1
+    tags: ['v*']        # keep
   pull_request:
 
 permissions:
-  contents: read
+  contents: write       # << was read; needed for GitHub Release
   packages: write
 
 concurrency:
@@ -17,7 +17,6 @@ concurrency:
 jobs:
   build-test-publish:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -29,13 +28,14 @@ jobs:
           cache: "pip"
 
       # ---- Lint ----
-      - name: Lint (ruff)
+      - name: Lint (ruff + black)
         run: |
           python -m pip install -U pip
-          pip install ruff
+          pip install ruff black
           ruff check .
+          black --check .
 
-      # ---- Install, Train, Test ----
+      # ---- Install, Train, Unit Tests ----
       - name: Install, Train, Unit Tests
         env:
           MODEL_VERSION: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'dev' }}
@@ -44,7 +44,7 @@ jobs:
           python src/train.py
           PYTHONPATH=$(pwd) pytest -q
 
-      # ---- Upload training artifacts (reproducibility) ----
+      # ---- Upload training artifacts ----
       - name: Upload training artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -60,19 +60,19 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ format('ghcr.io/{0}', github.repository | toLower) }}
+          images: ${{ format('ghcr.io/{0}', github.repository || '') }}
           flavor: |
             latest=false
           tags: |
-            type=ref,event=tag           # v0.1 -> :v0.1
-            type=ref,event=branch        # main -> :main
-            type=sha,prefix=sha-         # :sha-<short>
+            type=ref,event=tag
+            type=ref,event=branch
+            type=sha,prefix=sha-
             type=raw,value=latest,enable={{is_default_branch}}
 
       - name: Set up Buildx
         uses: docker/setup-buildx-action@v3
 
-      # ---- Build (for smoke), no push ----
+      # ---- Build (load for smoke), no push ----
       - name: Build (load for smoke)
         uses: docker/build-push-action@v5
         with:
@@ -85,7 +85,7 @@ jobs:
           build-args: |
             MODEL_VERSION=${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'dev' }}
 
-      # ---- Smoke test container ----
+      # ---- Smoke test container (health + predict) ----
       - name: Smoke test
         shell: bash
         run: |
@@ -93,13 +93,22 @@ jobs:
           CID=smoke
           docker run -d --name "$CID" -p 8000:8000 local/test:latest
           trap 'docker logs "$CID" || true; docker rm -f "$CID" || true' EXIT
+
+          # wait until healthy
           for i in {1..30}; do
             if curl -fsS http://localhost:8000/health >/dev/null; then
-              echo "Healthcheck OK"; exit 0
+              break
             fi
             sleep 1
           done
-          echo "Healthcheck failed"; exit 1
+
+          # predict payload (assignment spec)
+          curl -fsS -X POST http://localhost:8000/predict \
+            -H 'content-type: application/json' \
+            -d '{"age":0.02,"sex":-0.044,"bmi":0.06,"bp":-0.03,"s1":-0.02,"s2":0.03,"s3":-0.02,"s4":0.02,"s5":0.02,"s6":-0.001}' \
+            | grep -q '"prediction":'
+
+          docker stop "$CID"
 
       # ---- Login then Build & Push to GHCR ----
       - name: Login to GHCR
@@ -116,7 +125,7 @@ jobs:
         with:
           context: .
           push: true
-          tags: ${{ steps.meta.outputs.tags }}   # includes :v0.1 when you push tag v0.1
+          tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
