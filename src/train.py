@@ -1,50 +1,47 @@
-from pathlib import Path
-from datetime import datetime, timezone
 import json
 import joblib
-import numpy as np
+import numpy as np  # noqa: F401  # kept for later numeric operations
+from pathlib import Path
 from sklearn.datasets import load_diabetes
-from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import mean_squared_error
 from sklearn.preprocessing import StandardScaler
-from sklearn.pipeline import Pipeline
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import mean_squared_error
 
-# Load data
-data = load_diabetes(as_frame=False)
-X, y = data.data, data.target
+# --- Setup ---
+ART_DIR = Path("artifacts")
+ART_DIR.mkdir(exist_ok=True, parents=True)
+RANDOM_STATE = 42
 
-# Split
+# --- Load dataset ---
+data = load_diabetes(as_frame=True)
+X = data.data
+y = data.target
+
+# --- Split data ---
 X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.2, random_state=42
+    X, y, test_size=0.2, random_state=RANDOM_STATE
 )
 
-# Define pipeline
-pipeline = Pipeline([
-    ("scaler", StandardScaler()),
-    ("model", LinearRegression())
-])
+# --- Preprocess + train baseline model ---
+scaler = StandardScaler()
+X_train_scaled = scaler.fit_transform(X_train)
+X_test_scaled = scaler.transform(X_test)
 
-# Train
-pipeline.fit(X_train, y_train)
+model = LinearRegression()
+model.fit(X_train_scaled, y_train)
 
-# Evaluate
-preds = pipeline.predict(X_test)
-rmse = float(mean_squared_error(y_test, preds, squared=False))
-print(f"RMSE: {rmse:.2f}")
+# --- Evaluate ---
+preds = model.predict(X_test_scaled)
+rmse = mean_squared_error(y_test, preds, squared=False)
 
-# Save artifacts
-artifacts_dir = Path("artifacts")
-artifacts_dir.mkdir(parents=True, exist_ok=True)
+metrics = {"rmse": rmse}
+meta = {"model": "LinearRegression", "random_state": RANDOM_STATE}
 
-joblib.dump(pipeline, artifacts_dir / "model.joblib")
+# --- Save artifacts ---
+joblib.dump(model, ART_DIR / "model.joblib")
+(ART_DIR / "metrics.json").write_text(json.dumps(metrics, indent=2))
+(ART_DIR / "meta.json").write_text(json.dumps(meta, indent=2))
 
-meta = {
-    "pipeline": "baseline",
-    "version": "0.1.0",
-    "rmse": rmse,
-    "trained_at": datetime.now(timezone.utc).isoformat()
-}
-(artifacts_dir / "meta.json").write_text(json.dumps(meta, indent=2))
-
-print(json.dumps(meta, indent=2))
+print(f"✅ Training complete. RMSE={rmse:.4f}")
+print("Artifacts saved in", ART_DIR)
