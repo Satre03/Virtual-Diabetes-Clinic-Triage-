@@ -5,7 +5,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 from pathlib import Path
 from contextlib import asynccontextmanager
-import os, json, joblib, numpy as np
+import os, json, joblib
 
 ART_DIR = Path("artifacts")
 MODEL_PATH = ART_DIR / "model.joblib"
