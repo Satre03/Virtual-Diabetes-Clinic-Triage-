@@ -50,15 +50,6 @@ Expected answer:
 {"prediction": 235.9}
 ```
 
-## Ta bort?
-Kör containern
-```bash
-docker run -p 8002:8000 ghcr.io/melissawestberg/diabetes_risk_service:v0.3
-```
-Då nås API:t på:
-```bash
-http://localhost:8002/health
-```
 
 
 
