@@ -9,18 +9,14 @@ The Project i build to reproduce **MLOps-pipeline** with **GitHub Actions** and 
 
 ## Command to run the project
 
-### Clone the project
-```bash
-git clone https://github.com/Satre03/virtual-diabetes-clinic-triage.git
-cd virtual-diabetes-clinic-triage
+### Pull the project
+```docker pull ghcr.io/Satre03/VirtualDiabetesClinicTriage:v0.1
 ```
 
-Create and activate virtual environment\
-MAC:
-```bash
-python3 -m venv venv
-source venv/bin/activate 
+### Run the project
+```docker run -d -p 8000:8000 --name clinic-service ghcr.io/Satre03/VirtualDiabetesClinicTriage:v0.1
 ```
+
 WINDOWS:
 ``` bash
 py -m venv venv
