@@ -19,28 +19,6 @@ docker pull ghcr.io/Satre03/VirtualDiabetesClinicTriage:v0.1
 docker run -d -p 8000:8000 --name clinic-service ghcr.io/Satre03/VirtualDiabetesClinicTriage:v0.1
 ```
 
-WINDOWS:
-``` bash
-py -m venv venv
-venv\Scripts\activate
-```
-Installing dependencies
-
-```bash
-pip install -r requirements.txt
-```
-Train model manuelly (not required)
-```bash
-python src/train.py
-```
-Build Docker-image
-```bash
-docker build -t ghcr.io/satre03/virtual-diabetes-clinic-triage:v0.1 .
-```
-Run containern
-```bash
-docker run -p 8000:8000 ghcr.io/satre03/virtual-diabetes-clinic-triage:v0.1
-```
 Open in browser:
 ```bash
 http://localhost:8000/health
