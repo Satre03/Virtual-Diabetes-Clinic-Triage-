@@ -13,7 +13,7 @@ from sklearn.metrics import mean_squared_error
 ART_DIR = Path("artifacts")
 ART_DIR.mkdir(exist_ok=True, parents=True)
 
-MODELS_DIR = Path("models")          # new folder for Docker
+MODELS_DIR = Path("models")  # new folder for Docker
 MODELS_DIR.mkdir(exist_ok=True, parents=True)
 
 RANDOM_STATE = 42
