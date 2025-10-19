@@ -2,7 +2,6 @@ import argparse
 import json
 import joblib
 import os
-import pandas as pd
 import numpy as np
 from sklearn.datasets import load_diabetes
 from sklearn.ensemble import RandomForestRegressor
