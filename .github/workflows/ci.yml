@@ -43,7 +43,7 @@ jobs:
             python src/train.py --version 0.1
             echo ""
             echo "--- Testing v0.2 training script ---"
-            python src/train.py --version 0.2 # <--- 这里已经被修正了！
+            python src/train-v0.2.py --version 0.2 # <--- 这里已经被修正了！
           } > training_smoke_test_report.txt
 
       - name: Upload Smoke Test Report Artifact
