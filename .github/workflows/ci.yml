@@ -60,7 +60,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ format('ghcr.io/{0}', github.repository | toLower) }}
+          images: ${{ format('ghcr.io/{0}', toLower(github.repository)) }}
           flavor: |
             latest=false
           tags: |
