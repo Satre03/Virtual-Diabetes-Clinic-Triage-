@@ -1,51 +1,50 @@
+from pathlib import Path
+from datetime import datetime, timezone
 import json
 import joblib
-import os
 import numpy as np
 from sklearn.datasets import load_diabetes
 from sklearn.linear_model import LinearRegression
-from sklearn.metrics import mean_squared_error
 from sklearn.model_selection import train_test_split
-from sklearn.pipeline import Pipeline
+from sklearn.metrics import mean_squared_error
 from sklearn.preprocessing import StandardScaler
+from sklearn.pipeline import Pipeline
 
-RANDOM_SEED = 42
+# Load data
+data = load_diabetes(as_frame=False)
+X, y = data.data, data.target
 
-print("--- Training model version 0.1 ---")
-
-Xy = load_diabetes(as_frame=True)
-X = Xy.frame.drop(columns=["target"])
-y = Xy.frame["target"]
-features = list(X.columns)
-
+# Split
 X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.2, random_state=RANDOM_SEED
+    X, y, test_size=0.2, random_state=42
 )
 
-print("Using model: LinearRegression (v0.1)")
-model = Pipeline([
+# Define pipeline
+pipeline = Pipeline([
     ("scaler", StandardScaler()),
     ("model", LinearRegression())
 ])
 
-model.fit(X_train, y_train)
+# Train
+pipeline.fit(X_train, y_train)
 
-y_pred = model.predict(X_test)
-rmse = float(np.sqrt(mean_squared_error(y_test, y_pred)))
-print(f"Test RMSE for v0.1: {rmse:.4f}")
+# Evaluate
+preds = pipeline.predict(X_test)
+rmse = float(mean_squared_error(y_test, preds, squared=False))
+print(f"RMSE: {rmse:.2f}")
 
-os.makedirs("models", exist_ok=True)
+# Save artifacts
+artifacts_dir = Path("artifacts")
+artifacts_dir.mkdir(parents=True, exist_ok=True)
 
-model_path = "models/model_v0.1.joblib"
-joblib.dump(model, model_path)
-print(f"Model saved to {model_path}")
+joblib.dump(pipeline, artifacts_dir / "model.joblib")
 
-feature_path = "models/feature_list.json"
-with open(feature_path, "w") as f:
-    json.dump(features, f)
-print(f"Features saved to {feature_path}")
+meta = {
+    "pipeline": "baseline",
+    "version": "0.1.0",
+    "rmse": rmse,
+    "trained_at": datetime.now(timezone.utc).isoformat()
+}
+(artifacts_dir / "meta.json").write_text(json.dumps(meta, indent=2))
 
-metrics_v01 = {"version": "0.1", "rmse": rmse}
-with open("metrics_v01.json", "w") as f:
-    json.dump(metrics_v01, f, indent=4)
-print("Metrics saved to metrics_v01.json")
+print(json.dumps(meta, indent=2))
