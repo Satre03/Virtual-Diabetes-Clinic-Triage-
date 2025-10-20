@@ -55,12 +55,17 @@ jobs:
             artifacts/metrics.json
           if-no-files-found: error
 
+      # ---- Prepare lowercase repo for image name ----
+      - name: Normalize repo name to lowercase
+        shell: bash
+        run: echo "REPO_LC=${GITHUB_REPOSITORY,,}" >> "$GITHUB_ENV"
+
       # ---- Docker tagging metadata ----
       - name: Docker meta (tags/labels)
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ format('ghcr.io/{0}', toLower(github.repository)) }}
+          images: ghcr.io/${{ env.REPO_LC }}
           flavor: |
             latest=false
           tags: |
