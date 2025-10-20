@@ -14,7 +14,7 @@
 |----------|--------|--------|------------|-----------------|
 | v0.1 | LinearRegression | 53.85 | — | `StandardScaler + LinearRegression` |
 | v0.2 | RidgeRegression | 53.55 | -0.30 | `α = 20.0, solver = auto` |
-| v0.2(√) | RandomForestRegressor | 52.86 | -0.69 | `max_depth = 10, n_estimators = 400, max_features = sqrt` |
+
 
 **Interpretation:**  
 - Ridge Regression shows a small but measurable improvement by reducing overfitting compared to the baseline Linear Regression.  
